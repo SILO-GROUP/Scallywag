@@ -33,13 +33,11 @@ class Scraper:
     def craft_url(self, protocol, proxy, search_terms):
         # https://pirate.blue/s/?q=Raising+Arizona&category=0&page=0&orderby=99
         f = { 'q': search_terms, 'category': 0, 'page': 0, 'orderby': 99 }
-        return str.format( "{0}://{1}/s/?{2}", protocol, proxy, urllib.parse.urlencode(f) )
-
+        url = str.format( "{0}://{1}/s/?{2}", protocol, proxy, urllib.parse.urlencode(f) )
+        print(url)
+        return url
 
     def get_results(self, search_terms):
-        print("Fetching from")
-        print(self.config.proxy)
-
         url = self.craft_url( "https", self.config.proxy, search_terms )
 
         fetch_results = self.client.get( url )
@@ -76,7 +74,7 @@ class Scraper:
                 title = tr.xpath('td[2]/div[1]/a[1]/text()')[0]
                 seeders = tr.xpath('td[3]/text()')[0]
                 leechers = tr.xpath('td[4]/text()')[0]
-                author = tr.xpath('td[2]/font/a/text()')[0]
+                author = tr.xpath('td[2]/font/a/text()')
                 size_unprocessed = tr.xpath('td[2]/font/text()')[0]
                 url = tr.xpath('td/div[@class="detName"]/a[@class="detLink"]/@href')[0]
 

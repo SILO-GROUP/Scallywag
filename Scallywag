@@ -21,13 +21,11 @@ class Config:
 
 class Scallywag:
     def on_btnRefresh_clicked( self, object, data=None ):
+        # TODO implement refresh
         self.status("refresh pressed")
 
     def on_btnSearch_clicked( self, object, data=None ):
         self.status("search pressed")
-
-
-
 
         # clear the results_store
         # seeders, leechers, size, name
@@ -36,10 +34,6 @@ class Scallywag:
         for row in self.results_store:
             self.results_store.remove(row)
 
-        # prove to me that the results_store is populated
-        for row in self.results_store:
-            print(row[:])
-
         for column in self.results_tree_view.get_columns():
             self.results_tree_view.remove_column(column)
 
@@ -47,17 +41,12 @@ class Scallywag:
         self.results_tree_view.set_model(self.results_store)
 
         # add search result entries to the results store
-        # TODO add retrieval from search textentry
         search_field = self.builder.get_object("txtSearch")
         search_terms = search_field.get_text()
 
         for result in self.get_results( search_terms ):
             print( result.__str__() )
             self.results_store.append( [ result.seeders, result.leechers, result.size, result.title, result.author, result.url ])
-
-        # prove to me that the results_store is populated
-        for row in self.results_store:
-            print(row[:])
 
         for i, col_title in enumerate( [ "Seeders", "Leechers", "Size", "Title", "Author", "Url" ] ):
             # renderer creation
@@ -69,8 +58,6 @@ class Scallywag:
             # add column to tvw
             self.results_tree_view.append_column(column)
 
-
-
     def get_current_proxy(self):
         return self.mnuPulldown.get_active_text()
 
@@ -80,9 +67,7 @@ class Scallywag:
 
         self.status( str.format( "Changed PirateBay proxy site to {0}", self.config.proxy ) )
 
-
     def get_results(self, search_terms):
-
         self.searcher = searcher.Scraper( self.config )
 
         results =  self.searcher.get_results( search_terms )
@@ -95,11 +80,10 @@ class Scallywag:
         selection = self.results_tree_view.get_selection()
         (tm, ti) = selection.get_selected()
         url = tm.get_value(ti, 5)
-        # TODO scrape url for magnet link then pass to xdg-open
 
         magnet = self.searcher.get_magnet( url )
 
-        subprocess.call(["xdg-open", magnet])
+        subprocess.Popen( "xdg-open {0}".format(magnet), shell=True )
 
         self.status("Opening Magnet with xdg-open...")
 
@@ -147,7 +131,6 @@ class Scallywag:
         self.results_tree_view.connect("row-activated", self.on_btnDownload_clicked )
 
         self.window.show_all()
-
 
 
 if __name__ == "__main__":
