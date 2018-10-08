@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk
+
+from rsrc.Scraper import proxylister, searcher
+
+from configparser import ConfigParser
+
+import subprocess
+
+class Config:
+    def __init__(self, config_file):
+        settings = ConfigParser(allow_no_value=True)
+        settings.read(config_file)
+
+        # the url used to list out proxies
+        self.proxylist_url = settings.get("list_source", "piratebay_proxy_list")
+
+
+class Scallywag:
+    def on_btnRefresh_clicked( self, object, data=None ):
+        self.status("refresh pressed")
+
+    def on_btnSearch_clicked( self, object, data=None ):
+        self.status("search pressed")
+
+
+
+
+        # clear the results_store
+        # seeders, leechers, size, name
+        self.results_store.clear()
+
+        for row in self.results_store:
+            self.results_store.remove(row)
+
+        # prove to me that the results_store is populated
+        for row in self.results_store:
+            print(row[:])
+
+        for column in self.results_tree_view.get_columns():
+            self.results_tree_view.remove_column(column)
+
+        # associate new results_store with the treeview
+        self.results_tree_view.set_model(self.results_store)
+
+        # add search result entries to the results store
+        # TODO add retrieval from search textentry
+        search_field = self.builder.get_object("txtSearch")
+        search_terms = search_field.get_text()
+
+        for result in self.get_results( search_terms ):
+            print( result.__str__() )
+            self.results_store.append( [ result.seeders, result.leechers, result.size, result.title, result.author, result.url ])
+
+        # prove to me that the results_store is populated
+        for row in self.results_store:
+            print(row[:])
+
+        for i, col_title in enumerate( [ "Seeders", "Leechers", "Size", "Title", "Author", "Url" ] ):
+            # renderer creation
+            renderer = Gtk.CellRendererText()
+
+            # text is column number
+            column = Gtk.TreeViewColumn(col_title, renderer, text=i)
+
+            # add column to tvw
+            self.results_tree_view.append_column(column)
+
+
+
+    def get_current_proxy(self):
+        return self.mnuPulldown.get_active_text()
+
+    def on_mnuPulldown_changed(self, object, data=None ):
+        new_proxy = self.get_current_proxy()
+        self.config.proxy = new_proxy
+
+        self.status( str.format( "Changed PirateBay proxy site to {0}", self.config.proxy ) )
+
+
+    def get_results(self, search_terms):
+
+        self.searcher = searcher.Scraper( self.config )
+
+        results =  self.searcher.get_results( search_terms )
+
+        for result in results:
+            yield result
+
+
+    def on_btnDownload_clicked( self, object, data=None, **args ):
+        selection = self.results_tree_view.get_selection()
+        (tm, ti) = selection.get_selected()
+        url = tm.get_value(ti, 5)
+        # TODO scrape url for magnet link then pass to xdg-open
+
+        magnet = self.searcher.get_magnet( url )
+
+        subprocess.call(["xdg-open", magnet])
+
+        self.status("Opening Magnet with xdg-open...")
+
+    def status( self, msg ):
+        # GTK team, your API is bullshit.
+        self.statusbar.push( self.statusbar.get_context_id("stsBar"), msg )
+
+    def on_winMain_destroy(self, object, data=None):
+        print("quit by exiting")
+        Gtk.main_quit()
+
+    def __init__(self, configFile):
+        self.config = Config( configFile )
+
+        self.gladefile = "./rsrc/gui/winMain.glade"
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(self.gladefile)
+        self.builder.connect_signals(self)
+        self.window = self.builder.get_object("winMain")
+        self.statusbar = self.builder.get_object("stsBar")
+
+        self.status("Choose your PirateBay Proxy")
+
+        self.mnuPulldown = self.builder.get_object("mnuPulldown")
+
+        self.proxy_store = Gtk.ListStore(str)
+
+        self.mnuPulldown.set_model(self.proxy_store)
+
+        self.proxylister = proxylister.Scraper( self.config )
+        for proxy in self.proxylister.get_proxies():
+            self.proxy_store.append([proxy])
+
+        self.mnuPulldown.set_active(0)
+
+
+        self.results_store = Gtk.ListStore(int, int, str, str, str, str)
+
+        self.window.set_focus(self.builder.get_object("txtSearch"))
+
+        # treeview
+        self.results_tree_view = self.builder.get_object("tvwResults")
+
+        # wtf.  why doesn't this work?
+        self.results_tree_view.connect("row-activated", self.on_btnDownload_clicked )
+
+        self.window.show_all()
+
+
+
+if __name__ == "__main__":
+    main = Scallywag("config.ini")
+
+    Gtk.main()
