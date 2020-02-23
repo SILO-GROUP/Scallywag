@@ -71,7 +71,7 @@ class Scraper:
             results_buffer = list()
 
             for tr in resultsTable_xpath:
-                title = tr.xpath('td[2]/div[1]/a[1]/text()')[0]
+                title = tr.xpath('td[2]/div[1]/a[1]/text()')
                 seeders = tr.xpath('td[3]/text()')[0]
                 leechers = tr.xpath('td[4]/text()')[0]
                 author = tr.xpath('td[2]/font/a/text()')

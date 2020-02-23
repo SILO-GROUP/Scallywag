@@ -3,12 +3,10 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
-
 from rsrc.Scraper import proxylister, searcher
-
 from configparser import ConfigParser
-
 import subprocess
+import os
 
 class Config:
     def __init__(self, config_file):
@@ -98,7 +96,7 @@ class Scallywag:
     def __init__(self, configFile):
         self.config = Config( configFile )
 
-        self.gladefile = "./rsrc/gui/winMain.glade"
+        self.gladefile = "{0}/rsrc/gui/winMain.glade".format(os.path.dirname(os.path.realpath(__file__)))
         self.builder = Gtk.Builder()
         self.builder.add_from_file(self.gladefile)
         self.builder.connect_signals(self)
@@ -134,6 +132,7 @@ class Scallywag:
 
 
 if __name__ == "__main__":
-    main = Scallywag("config.ini")
+    parent_dir = os.path.dirname(os.path.realpath(__file__))
+    main = Scallywag("{0}/config.ini".format(parent_dir))
 
     Gtk.main()
