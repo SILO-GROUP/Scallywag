@@ -9,7 +9,7 @@ class Scraper:
         self.config = config
 
     def get_proxies(self):
-        fetch_results = self.client.get( "https://" + self.config.proxylist_url )
+        fetch_results = self.client.get( self.config.proxylist_url )
         proxy_list = self.Parser.scrape( "proxy_list", fetch_results.content )
         return proxy_list
 
@@ -24,7 +24,9 @@ class Scraper:
         @staticmethod
         def proxy_list( text ):
             proxyTable = html.fromstring( text )
-            proxyTable_xpath = proxyTable.xpath( '//table[@class="proxies"]/tbody/tr/@data-domain' )
+            proxyTable_xpath = proxyTable.xpath('//body[@id="mainPage"]/div[@class="container"]/div[@id="content"]/table[@id="searchResult"]/tr/td[@class="site"]/a/text()')
+            for proxy in proxyTable_xpath:
+                print("Available Proxy: {0}".format( proxy ) )
             return proxyTable_xpath
 
     class SessionError( Exception ):

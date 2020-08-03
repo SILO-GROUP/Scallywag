@@ -69,7 +69,7 @@ class Scallywag:
         self.searcher = searcher.Scraper( self.config )
 
         results =  self.searcher.get_results( search_terms )
-
+        self.status("{0} results found.".format( len(results) ) )
         for result in results:
             yield result
 

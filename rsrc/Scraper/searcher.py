@@ -3,6 +3,7 @@ from lxml import html
 import urllib
 import re
 import json
+import sys
 
 class Result:
     def __init__(self, title, seeders, leechers, size, author, url):
@@ -32,24 +33,30 @@ class Scraper:
 
     def craft_url(self, protocol, proxy, search_terms):
         # https://pirate.blue/s/?q=Raising+Arizona&category=0&page=0&orderby=99
-        f = { 'q': search_terms, 'category': 0, 'page': 0, 'orderby': 99 }
-        url = str.format( "{0}://{1}/s/?{2}", protocol, proxy, urllib.parse.urlencode(f) )
+        f = { 'q': search_terms, 'page': 0, 'orderby': 99 }
+        # https://thepiratebay0.org/s/?page=0&orderby=0&q=inuyasha
+        # https://thepiratebay0.org/s/?page=0&orderby=0&q=inuyasha
+        url = "{0}://{1}/s/?{2}".format( protocol, proxy, urllib.parse.urlencode(f) )
         print(url)
         return url
 
     def get_results(self, search_terms):
         url = self.craft_url( "https", self.config.proxy, search_terms )
 
-        fetch_results = self.client.get( url )
+        try:
+            fetch_results = self.client.get( url )
+        except requests.exceptions.RequestException as e:
+            print( e, file=sys.stderr )
         results_list = self.Parser.scrape( "results_list", fetch_results.content )
 
         return results_list
 
 
     def get_magnet(self, url):
-        url = "https://" + self.config.proxy + url
-        fetch_results = self.client.get(url)
-
+        try:
+            fetch_results = self.client.get(url)
+        except requests.exceptions.RequestException as e:
+            print( e, file=sys.stderr )
         magnet = self.Parser.scrape( "magnet_link", fetch_results.content )
 
         return magnet
@@ -71,26 +78,40 @@ class Scraper:
             results_buffer = list()
 
             for tr in resultsTable_xpath:
-                title = tr.xpath('td[2]/div[1]/a[1]/text()')
-                seeders = tr.xpath('td[3]/text()')[0]
-                leechers = tr.xpath('td[4]/text()')[0]
-                author = tr.xpath('td[2]/font/a/text()')
-                size_unprocessed = tr.xpath('td[2]/font/text()')[0]
-                url = tr.xpath('td/div[@class="detName"]/a[@class="detLink"]/@href')[0]
+                title = Scraper.Parser.scrape_helper( tr, 'td[2]/div[1]/a[1]/text()' )
+                seeders = Scraper.Parser.scrape_helper( tr, 'td[3]/text()' )
 
+                leechers = Scraper.Parser.scrape_helper( tr, 'td[4]/text()' )
+                url = Scraper.Parser.scrape_helper( tr, 'td/div[@class="detName"]/a[@class="detLink"]/@href' )
+
+                size_unprocessed = Scraper.Parser.scrape_helper( tr, 'td[2]/font/text()' )
 
                 m = re.search('Size (.+?),', size_unprocessed)
 
                 if m:
                     size = m.group(1)
 
+                author = Scraper.Parser.scrape_helper( tr, 'td[2]/font[@class="detDesc"]/*/text()' )
 
+
+
+                print("Result: {0}".format( Result(title, seeders, leechers, size, author, url) ) )
                 results_buffer.append(
                     Result(title, seeders, leechers, size, author, url)
                 )
 
+            # hack
+            nav = results_buffer.pop()
+
             return results_buffer
 
+        @staticmethod
+        def scrape_helper( tr, xpathq ):
+            try:
+                val = tr.xpath( xpathq )[0]
+            except IndexError:
+                val = "0"
+            return val
 
         @staticmethod
         def magnet_link( text ):
