@@ -1,5 +1,5 @@
 # Scallywag
-Any swashbuckler's favorite tool.
+Any swashbuckler's favorite tool.  This is a desktop client for The Pirate Bay website and its various sources.
 
 # Purpose
 A piratebay browser that deliberately circumvents processor-sharing exploitation being sent to browsers.
