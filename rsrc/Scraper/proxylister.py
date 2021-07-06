@@ -9,6 +9,7 @@ class Scraper:
         self.config = config
 
     def get_proxies(self):
+        print("Fetching raw HTML from '{0}'".format( self.config.proxylist_url))
         fetch_results = self.client.get( self.config.proxylist_url )
         proxy_list = self.Parser.scrape( "proxy_list", fetch_results.content )
         return proxy_list

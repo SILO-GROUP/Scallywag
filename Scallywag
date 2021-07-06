@@ -112,11 +112,17 @@ class Scallywag:
         self.mnuPulldown.set_model(self.proxy_store)
 
         self.proxylister = proxylister.Scraper( self.config )
+
+        self.status("Fetching proxies...")
+        print("Fetching proxies...")
+
         for proxy in self.proxylister.get_proxies():
+            print("Found: {0}".format( proxy ))
             self.proxy_store.append([proxy])
 
-        self.mnuPulldown.set_active(0)
+        print("Proxy fetch complete.")
 
+        self.mnuPulldown.set_active(0)
 
         self.results_store = Gtk.ListStore(int, int, str, str, str, str)
 
